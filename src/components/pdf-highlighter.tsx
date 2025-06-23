@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Upload, Download, Loader2, FileText, Lightbulb, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Upload, Download, Loader2, FileText, Lightbulb, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -123,7 +123,16 @@ export default function PdfHighlighter() {
   };
 
   const currentHighlights = useMemo(() => {
-    return highlights.find(h => h.pageIndex === currentPage - 1)?.rects || [];
+    const pageHighlights = highlights.find(h => h.pageIndex === currentPage - 1);
+    if (!pageHighlights) return [];
+  
+    return pageHighlights.rects.map(rect => ({
+      ...rect,
+      left: rect.left * PDF_SCALE,
+      top: rect.top * PDF_SCALE,
+      width: rect.width * PDF_SCALE,
+      height: rect.height * PDF_SCALE,
+    }));
   }, [highlights, currentPage]);
 
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
@@ -154,16 +163,146 @@ export default function PdfHighlighter() {
       </header>
 
       {!pdfFile ? (
-        <Card className="max-w-xl mx-auto border-dashed border-2 hover:border-primary transition-colors">
-          <label htmlFor="pdf-upload" className="cursor-pointer">
-            <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-              <Upload className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold">Drag & drop a PDF file</h3>
-              <p className="text-muted-foreground">or click to select a file from your computer</p>
-            </CardContent>
-          </label>
-          <input id="pdf-upload" type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
-        </Card>
+        <div className="flex flex-col items-center">
+            <Card className="w-full max-w-xl border-dashed border-2 hover:border-primary transition-colors">
+            <label htmlFor="pdf-upload" className="cursor-pointer">
+                <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+                <Upload className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold">Drag & drop a PDF file</h3>
+                <p className="text-muted-foreground">or click to select a file from your computer</p>
+                </CardContent>
+            </label>
+            <input id="pdf-upload" type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
+            </Card>
+
+            <section className="w-full pt-16 pb-8">
+                <div className="container px-0">
+                    <div className="mx-auto max-w-3xl text-center mb-12">
+                        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Simple, transparent pricing</h2>
+                        <p className="mt-4 text-muted-foreground md:text-xl">
+                            Choose the plan that's right for you. Get started for free.
+                        </p>
+                    </div>
+                    <div className="grid items-start gap-6 lg:grid-cols-3 lg:gap-10">
+                    <Card className="flex flex-col h-full">
+                        <CardHeader>
+                            <CardTitle>Free</CardTitle>
+                            <CardDescription>For light users and to try out our service.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                            <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-bold">$0</span>
+                            <span className="text-sm text-muted-foreground">/ forever</span>
+                            </div>
+                            <Separator className="my-4" />
+                            <ul className="grid gap-2 text-sm">
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Analyze 1 PDF document
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                AI-powered summary
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Key point highlighting
+                            </li>
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" variant="outline" onClick={() => document.getElementById('pdf-upload')?.click()}>
+                                Get Started
+                            </Button>
+                        </CardFooter>
+                        </Card>
+                        
+                        <Card className="flex flex-col h-full border-primary shadow-lg relative">
+                        <div className="absolute top-0 right-4 -mt-3">
+                            <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground">
+                                Most Popular
+                            </div>
+                            </div>
+                        <CardHeader>
+                            <CardTitle>Pro Monthly</CardTitle>
+                            <CardDescription>For power users who need unlimited access.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                            <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-bold">$10</span>
+                            <span className="text-sm text-muted-foreground">/ month</span>
+                            </div>
+                            <Separator className="my-4" />
+                            <ul className="grid gap-2 text-sm">
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Unlimited PDF analyses
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                AI-powered summaries
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Key point highlighting
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Download highlighted PDFs
+                            </li>
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            <Button asChild className="w-full">
+                            <a href="https://your-store.lemonsqueezy.com/buy/pro-monthly-variant-id" target="_blank" rel="noopener noreferrer">
+                                Subscribe Now
+                            </a>
+                            </Button>
+                        </CardFooter>
+                        </Card>
+                        
+                        <Card className="flex flex-col h-full">
+                        <CardHeader>
+                            <CardTitle>Pay Per PDF</CardTitle>
+                            <CardDescription>For occasional use without a subscription.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                            <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-bold">$3</span>
+                            <span className="text-sm text-muted-foreground">/ per PDF</span>
+                            </div>
+                            <Separator className="my-4" />
+                            <ul className="grid gap-2 text-sm">
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Pay only for what you use
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                AI-powered summaries
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Key point highlighting
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-primary" />
+                                Download highlighted PDFs
+                            </li>
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            <Button asChild className="w-full" variant="secondary">
+                            <a href="https://your-store.lemonsqueezy.com/buy/per-pdf-variant-id" target="_blank" rel="noopener noreferrer">
+                                Buy Now
+                            </a>
+                            </Button>
+                        </CardFooter>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -203,10 +342,10 @@ export default function PdfHighlighter() {
                              key={i}
                              className="absolute bg-accent/40 rounded-sm animate-in fade-in"
                              style={{
-                               left: `${rect.left * PDF_SCALE}px`,
-                               top: `${rect.top * PDF_SCALE}px`,
-                               width: `${rect.width * PDF_SCALE}px`,
-                               height: `${rect.height * PDF_SCALE}px`,
+                               left: `${rect.left}px`,
+                               top: `${rect.top}px`,
+                               width: `${rect.width}px`,
+                               height: `${rect.height}px`,
                              }}
                            />
                          ))}
