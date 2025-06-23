@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useToast } from "@/hooks/use-toast";
 import { analyzePdf } from '@/app/actions';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Upload, Download, Loader2, FileText, Lightbulb, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -29,6 +31,19 @@ export default function PdfHighlighter() {
   const [aiResult, setAiResult] = useState<KeyPointExtractionOutput | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const { toast } = useToast();
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [hasUsedFreeTier, setHasUsedFreeTier] = useState(false);
+
+  useEffect(() => {
+    try {
+      const analysisCount = localStorage.getItem('pdfAnalysisCount');
+      if (analysisCount && parseInt(analysisCount, 10) >= 1) {
+        setHasUsedFreeTier(true);
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage:", error);
+    }
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -49,6 +64,12 @@ export default function PdfHighlighter() {
 
   const handleAnalyze = async () => {
     if (!pdfFile) return;
+
+    if (hasUsedFreeTier) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     setIsLoading(true);
     setAiResult(null);
     setHighlights([]);
@@ -64,6 +85,13 @@ export default function PdfHighlighter() {
 
       const highlightData = await findHighlights(pdfFile, result.keyPoints);
       setHighlights(highlightData);
+      
+      try {
+        localStorage.setItem('pdfAnalysisCount', '1');
+        setHasUsedFreeTier(true);
+      } catch (error) {
+        console.warn("Could not write to localStorage:", error);
+      }
 
     } catch (e) {
       toast({ variant: 'destructive', title: 'Analysis Failed', description: (e as Error).message });
@@ -103,6 +131,23 @@ export default function PdfHighlighter() {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Free Limit Reached</AlertDialogTitle>
+            <AlertDialogDescription>
+              You've used your one free PDF analysis. Please upgrade to a paid plan to continue analyzing documents.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Link href="/pricing">View Pricing</Link>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <header className="text-center mb-8">
         <h1 className="text-4xl font-bold font-headline text-primary">PDF Highlighter AI</h1>
         <p className="text-muted-foreground mt-2">Upload a PDF and let AI summarize and highlight key points for you.</p>
@@ -125,15 +170,19 @@ export default function PdfHighlighter() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="truncate max-w-xs md:max-w-md">{pdfFile.name}</CardTitle>
-                <div className="flex gap-2">
-                  <Button onClick={handleAnalyze} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
-                    {aiResult ? 'Re-Analyze' : 'Analyze'}
-                  </Button>
-                  <Button onClick={handleDownload} disabled={!aiResult || isLoading} variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
+                <div className="flex items-center gap-2">
+                    <Link href="/pricing" passHref>
+                      <Button variant="ghost" size="sm">Pricing</Button>
+                    </Link>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button onClick={handleAnalyze} disabled={isLoading}>
+                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                      {aiResult ? 'Re-Analyze' : 'Analyze'}
+                    </Button>
+                    <Button onClick={handleDownload} disabled={!aiResult || isLoading} variant="outline">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -154,10 +203,10 @@ export default function PdfHighlighter() {
                              key={i}
                              className="absolute bg-accent/40 rounded-sm animate-in fade-in"
                              style={{
-                               left: `${rect.left * PDF_SCALE}px`,
-                               top: `${rect.top * PDF_SCALE}px`,
-                               width: `${rect.width * PDF_SCALE}px`,
-                               height: `${rect.height * PDF_SCALE}px`,
+                               left: `${rect.left}px`,
+                               top: `${rect.top}px`,
+                               width: `${rect.width}px`,
+                               height: `${rect.height}px`,
                              }}
                            />
                          ))}

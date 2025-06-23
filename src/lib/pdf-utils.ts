@@ -61,7 +61,6 @@ export async function findHighlights(file: File, keyPoints: string[]): Promise<H
         if (significantWords.has(word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,""))) {
           // 3. If a significant word is found, calculate its bounding box.
           const tx = pdfjs.Util.transform(viewport.transform, textItem.transform);
-          const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
           
           const itemWidth = textItem.width;
           const itemHeight = textItem.height;
