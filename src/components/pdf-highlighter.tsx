@@ -19,6 +19,8 @@ import 'react-pdf/dist/Page/TextLayer.css';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
+const PDF_SCALE = 1.5;
+
 export default function PdfHighlighter() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -146,16 +148,16 @@ export default function PdfHighlighter() {
                   <ScrollArea className="h-[70vh]">
                     <Document file={pdfFile} onLoadSuccess={onDocumentLoadSuccess} loading={<div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
                       <div className="relative">
-                        <Page pageNumber={currentPage} scale={1.5} />
+                        <Page pageNumber={currentPage} scale={PDF_SCALE} />
                         {currentHighlights.map((rect, i) => (
                            <div
                              key={i}
                              className="absolute bg-accent/40 rounded-sm animate-in fade-in"
                              style={{
-                               left: `${rect.left}px`,
-                               top: `${rect.top}px`,
-                               width: `${rect.width}px`,
-                               height: `${rect.height}px`,
+                               left: `${rect.left * PDF_SCALE}px`,
+                               top: `${rect.top * PDF_SCALE}px`,
+                               width: `${rect.width * PDF_SCALE}px`,
+                               height: `${rect.height * PDF_SCALE}px`,
                              }}
                            />
                          ))}
