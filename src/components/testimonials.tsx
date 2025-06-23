@@ -35,9 +35,9 @@ export default function Testimonials() {
   return (
     <section className="w-full py-12 md:py-24 lg:py-32">
       <div className="container px-4 md:px-6">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">What Our Users Say</h2>
-          <p className="mt-4 text-muted-foreground md:text-xl">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-center text-3xl font-bold tracking-tighter sm:text-4xl">What Our Users Say</h2>
+          <p className="mt-4 text-center text-muted-foreground md:text-xl">
             Hear from students, researchers, and professionals who have saved time with our tool.
           </p>
         </div>
