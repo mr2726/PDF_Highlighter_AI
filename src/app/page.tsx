@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import Faq from '@/components/faq';
 import Testimonials from '@/components/testimonials';
+import LeaveReview from '@/components/leave-review';
 
 const PdfHighlighter = dynamic(() => import('@/components/pdf-highlighter'), {
   ssr: false,
@@ -19,6 +20,7 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <PdfHighlighter />
       <Testimonials />
+      <LeaveReview />
       <Faq />
     </main>
   );
