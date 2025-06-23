@@ -203,10 +203,10 @@ export default function PdfHighlighter() {
                              key={i}
                              className="absolute bg-accent/40 rounded-sm animate-in fade-in"
                              style={{
-                               left: `${rect.left}px`,
-                               top: `${rect.top}px`,
-                               width: `${rect.width}px`,
-                               height: `${rect.height}px`,
+                               left: `${rect.left * PDF_SCALE}px`,
+                               top: `${rect.top * PDF_SCALE}px`,
+                               width: `${rect.width * PDF_SCALE}px`,
+                               height: `${rect.height * PDF_SCALE}px`,
                              }}
                            />
                          ))}
