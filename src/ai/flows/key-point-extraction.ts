@@ -32,7 +32,7 @@ export async function keyPointExtraction(input: KeyPointExtractionInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'keyPointExtractionPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-pro',
   input: {schema: KeyPointExtractionInputSchema},
   output: {schema: KeyPointExtractionOutputSchema},
   prompt: `You are an expert AI assistant specialized in extracting key information from documents.

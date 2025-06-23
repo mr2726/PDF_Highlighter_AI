@@ -29,7 +29,7 @@ export async function summarizePdf(input: SummarizePdfInput): Promise<SummarizeP
 
 const prompt = ai.definePrompt({
   name: 'summarizePdfPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-pro',
   input: {schema: SummarizePdfInputSchema},
   output: {schema: SummarizePdfOutputSchema},
   prompt: `You are an expert summarizer of documents.
