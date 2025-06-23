@@ -16,6 +16,19 @@ export type Highlight = {
   rects: Rect[];
 };
 
+export async function extractTextFromPdf(file: File): Promise<string> {
+  const fileBuffer = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: fileBuffer }).promise;
+  let fullText = '';
+  for (let i = 0; i < pdf.numPages; i++) {
+    const page = await pdf.getPage(i + 1);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+    fullText += pageText + '\n\n';
+  }
+  return fullText;
+}
+
 // This function finds the coordinates of key phrases in a PDF.
 // It simplifies the problem by looking for individual significant words
 // from the key points provided by the AI.

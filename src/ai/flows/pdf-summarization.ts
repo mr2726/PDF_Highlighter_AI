@@ -12,11 +12,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SummarizePdfInputSchema = z.object({
-  pdfDataUri: z
+  documentText: z
     .string()
-    .describe(
-      "The PDF document's data, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+    .describe('The text content of the document to summarize.'),
 });
 export type SummarizePdfInput = z.infer<typeof SummarizePdfInputSchema>;
 
@@ -33,11 +31,14 @@ const prompt = ai.definePrompt({
   name: 'summarizePdfPrompt',
   input: {schema: SummarizePdfInputSchema},
   output: {schema: SummarizePdfOutputSchema},
-  prompt: `You are an expert summarizer of PDF documents.
+  prompt: `You are an expert summarizer of documents.
 
-You will receive the content of a PDF document. Your task is to create a concise and informative summary of the document's main points.
+You will receive the text content of a document. Your task is to create a concise and informative summary of the document's main points.
 
-PDF Content: {{media url=pdfDataUri}}`,
+Document Content:
+---
+{{{documentText}}}
+---`,
 });
 
 const summarizePdfFlow = ai.defineFlow(

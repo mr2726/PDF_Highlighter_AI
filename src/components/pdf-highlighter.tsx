@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useToast } from "@/hooks/use-toast";
 import { analyzePdf } from '@/app/actions';
-import { findHighlights, createHighlightedPdf } from '@/lib/pdf-utils';
+import { findHighlights, createHighlightedPdf, extractTextFromPdf } from '@/lib/pdf-utils';
 import type { Highlight } from '@/lib/pdf-utils';
 import type { KeyPointExtractionOutput } from '@/ai/flows/key-point-extraction';
 
@@ -48,33 +48,26 @@ export default function PdfHighlighter() {
   const handleAnalyze = async () => {
     if (!pdfFile) return;
     setIsLoading(true);
+    setAiResult(null);
+    setHighlights([]);
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(pdfFile);
-      reader.onload = async () => {
-        const pdfDataUri = reader.result as string;
-        try {
-          const result = await analyzePdf({ pdfDataUri });
-          setAiResult(result);
-          toast({ title: 'Analysis Complete', description: 'Summary and key points generated.' });
+      const documentText = await extractTextFromPdf(pdfFile);
+      if (!documentText.trim()) {
+        throw new Error("Could not extract any text from the PDF. It might be an image-only PDF.");
+      }
 
-          const highlightData = await findHighlights(pdfFile, result.keyPoints);
-          setHighlights(highlightData);
+      const result = await analyzePdf({ documentText });
+      setAiResult(result);
+      toast({ title: 'Analysis Complete', description: 'Summary and key points generated.' });
 
-        } catch (e) {
-          toast({ variant: 'destructive', title: 'Analysis Failed', description: (e as Error).message });
-          setAiResult(null);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      reader.onerror = () => {
-        setIsLoading(false);
-        toast({ variant: 'destructive', title: 'File Read Error', description: 'Could not read the PDF file.' });
-      };
+      const highlightData = await findHighlights(pdfFile, result.keyPoints);
+      setHighlights(highlightData);
+
     } catch (e) {
+      toast({ variant: 'destructive', title: 'Analysis Failed', description: (e as Error).message });
+      setAiResult(null);
+    } finally {
       setIsLoading(false);
-      toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
     }
   };
 

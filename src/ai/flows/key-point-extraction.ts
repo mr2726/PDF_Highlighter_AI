@@ -12,11 +12,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const KeyPointExtractionInputSchema = z.object({
-  pdfDataUri: z
+  documentText: z
     .string()
-    .describe(
-      "A PDF document as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+    .describe('The text content of the document to analyze.'),
 });
 export type KeyPointExtractionInput = z.infer<typeof KeyPointExtractionInputSchema>;
 
@@ -36,16 +34,18 @@ const prompt = ai.definePrompt({
   name: 'keyPointExtractionPrompt',
   input: {schema: KeyPointExtractionInputSchema},
   output: {schema: KeyPointExtractionOutputSchema},
-  prompt: `You are an expert AI assistant specialized in extracting key information from PDF documents.
+  prompt: `You are an expert AI assistant specialized in extracting key information from documents.
 
-You will analyze the PDF document provided and identify the most important sections, facts, and takeaways.
+You will analyze the document text provided and identify the most important sections, facts, and takeaways.
 
 Based on your analysis, you will generate a concise summary of the document and a list of key points.
 
-PDF Document: {{media url=pdfDataUri}}
+Document Text:
+---
+{{{documentText}}}
+---
 
-Summary:
-Key Points:`, // Handlebars syntax for data URI
+Your response should include a summary and a list of key points.`,
 });
 
 const keyPointExtractionFlow = ai.defineFlow(

@@ -9,6 +9,6 @@ export async function analyzePdf(input: KeyPointExtractionInput): Promise<KeyPoi
   } catch (error) {
     console.error("AI analysis failed:", error);
     // It's better to throw a generic error message to the client.
-    throw new Error("Failed to analyze the PDF with AI. The document might be corrupted or in an unsupported format.");
+    throw new Error("Failed to analyze the PDF with AI. Please try again.");
   }
 }
