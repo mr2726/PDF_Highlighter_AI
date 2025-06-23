@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 export default function LeaveReview() {
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
-      <div className="container px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
             <CardTitle>Share Your Experience</CardTitle>
