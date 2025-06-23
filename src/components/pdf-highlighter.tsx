@@ -17,7 +17,7 @@ import { Upload, Download, Loader2, FileText, Lightbulb, ChevronLeft, ChevronRig
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 export default function PdfHighlighter() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
