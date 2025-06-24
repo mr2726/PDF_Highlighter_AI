@@ -1,10 +1,24 @@
+'use client';
+
 import Link from 'next/link';
 import { Check, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
 
 export default function PricingPage() {
+  const [redirectUrlBase, setRedirectUrlBase] = useState('');
+
+  useEffect(() => {
+    // Ensure this runs only on the client
+    setRedirectUrlBase(window.location.origin);
+  }, []);
+
+  const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pro-monthly` : '#';
+  const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pay-per-pdf` : '#';
+
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="container mx-auto px-4 lg:px-6 h-16 flex items-center border-b">
@@ -100,8 +114,8 @@ export default function PricingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button asChild className="w-full">
-                  <a href="https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0">
+                <Button asChild className="w-full" disabled={!redirectUrlBase}>
+                  <a href={proMonthlyUrl}>
                     Subscribe Now
                   </a>
                 </Button>
@@ -139,8 +153,8 @@ export default function PricingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button asChild className="w-full" variant="secondary">
-                  <a href="https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0">
+                <Button asChild className="w-full" variant="secondary" disabled={!redirectUrlBase}>
+                  <a href={payPerPdfUrl}>
                     Buy Now
                   </a>
                 </Button>

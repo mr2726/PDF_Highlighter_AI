@@ -23,6 +23,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 const PDF_SCALE = 1.5;
 
+type UserAccess = {
+  isPro: boolean;
+  credits: number;
+  isFreeTierUsed: boolean;
+};
+
 export default function PdfHighlighter() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -32,16 +38,36 @@ export default function PdfHighlighter() {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const { toast } = useToast();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [hasUsedFreeTier, setHasUsedFreeTier] = useState(false);
+  const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, isFreeTierUsed: false });
+  const [redirectUrlBase, setRedirectUrlBase] = useState('');
+
+  useEffect(() => {
+    setRedirectUrlBase(window.location.origin);
+  }, []);
 
   useEffect(() => {
     try {
-      const analysisCount = localStorage.getItem('pdfAnalysisCount');
-      if (analysisCount && parseInt(analysisCount, 10) >= 1) {
-        setHasUsedFreeTier(true);
+      const expiry = localStorage.getItem('proAccessExpiry');
+      const credits = parseInt(localStorage.getItem('pdfCredits') || '0', 10);
+      const analysisCount = parseInt(localStorage.getItem('pdfAnalysisCount') || '0', 10);
+
+      let isPro = false;
+      if (expiry) {
+        if (new Date(expiry) > new Date()) {
+          isPro = true;
+        } else {
+          localStorage.removeItem('proAccessExpiry');
+        }
       }
+
+      setUserAccess({
+        isPro: isPro,
+        credits: credits,
+        isFreeTierUsed: analysisCount >= 1,
+      });
     } catch (error) {
       console.warn("Could not access localStorage:", error);
+      setUserAccess({ isPro: false, credits: 0, isFreeTierUsed: false });
     }
   }, []);
 
@@ -62,14 +88,8 @@ export default function PdfHighlighter() {
     setNumPages(numPages);
   };
 
-  const handleAnalyze = async () => {
+  const runAnalysis = async () => {
     if (!pdfFile) return;
-
-    if (hasUsedFreeTier) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-
     setIsLoading(true);
     setAiResult(null);
     setHighlights([]);
@@ -78,21 +98,11 @@ export default function PdfHighlighter() {
       if (!documentText.trim()) {
         throw new Error("Could not extract any text from the PDF. It might be an image-only PDF.");
       }
-
       const result = await analyzePdf({ documentText });
       setAiResult(result);
       toast({ title: 'Analysis Complete', description: 'Summary and key points generated.' });
-
       const highlightData = await findHighlights(pdfFile, result.keyPoints);
       setHighlights(highlightData);
-      
-      try {
-        localStorage.setItem('pdfAnalysisCount', '1');
-        setHasUsedFreeTier(true);
-      } catch (error) {
-        console.warn("Could not write to localStorage:", error);
-      }
-
     } catch (e) {
       toast({ variant: 'destructive', title: 'Analysis Failed', description: (e as Error).message });
       setAiResult(null);
@@ -101,7 +111,48 @@ export default function PdfHighlighter() {
     }
   };
 
+  const handleAnalyze = async () => {
+    if (!pdfFile) return;
+
+    const { isPro, credits, isFreeTierUsed } = userAccess;
+
+    if (isPro) {
+      await runAnalysis();
+      return;
+    }
+    if (credits > 0) {
+      try {
+        localStorage.setItem('pdfCredits', (credits - 1).toString());
+        setUserAccess(prev => ({ ...prev, credits: prev.credits - 1 }));
+      } catch (error) { console.warn("Could not write to localStorage:", error); }
+      await runAnalysis();
+      return;
+    }
+    if (!isFreeTierUsed) {
+      try {
+        localStorage.setItem('pdfAnalysisCount', '1');
+        setUserAccess(prev => ({ ...prev, isFreeTierUsed: true }));
+      } catch (error) { console.warn("Could not write to localStorage:", error); }
+      await runAnalysis();
+      return;
+    }
+    setShowUpgradeDialog(true);
+  };
+
   const handleDownload = async () => {
+    const isFreeTierUser = !userAccess.isPro && userAccess.credits === 0;
+    
+    let hasUsedFreeAnalysis = false;
+    try {
+        hasUsedFreeAnalysis = localStorage.getItem('pdfAnalysisCount') === '1';
+    } catch (e) { console.warn("Could not access localStorage:", e) }
+
+    if (isFreeTierUser && hasUsedFreeAnalysis) {
+        toast({ variant: "destructive", title: "Upgrade to Download", description: "Downloading highlighted PDFs is a premium feature." });
+        setShowUpgradeDialog(true);
+        return;
+    }
+
     if (!pdfFile || highlights.length === 0) {
       toast({ variant: "destructive", title: "Nothing to download", description: "Please analyze a PDF first." });
       return;
@@ -138,14 +189,17 @@ export default function PdfHighlighter() {
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, numPages));
 
+  const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pro-monthly` : '#';
+  const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pay-per-pdf` : '#';
+
   return (
     <div className="container mx-auto p-4 md:p-8">
       <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Free Limit Reached</AlertDialogTitle>
+            <AlertDialogTitle>Upgrade Required</AlertDialogTitle>
             <AlertDialogDescription>
-              You've used your one free PDF analysis. Please upgrade to a paid plan to continue analyzing documents.
+              You've used your free analysis. You have {userAccess.credits} credit(s) remaining. Please purchase more credits or subscribe to continue.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -253,8 +307,8 @@ export default function PdfHighlighter() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button asChild className="w-full">
-                            <a href="https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0">
+                            <Button asChild className="w-full" disabled={!redirectUrlBase}>
+                            <a href={proMonthlyUrl}>
                                 Subscribe Now
                             </a>
                             </Button>
@@ -292,8 +346,8 @@ export default function PdfHighlighter() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button asChild className="w-full" variant="secondary">
-                            <a href="https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0">
+                            <Button asChild className="w-full" variant="secondary" disabled={!redirectUrlBase}>
+                            <a href={payPerPdfUrl}>
                                 Buy Now
                             </a>
                             </Button>
