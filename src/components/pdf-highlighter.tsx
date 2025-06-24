@@ -27,6 +27,7 @@ type UserAccess = {
   isPro: boolean;
   credits: number;
   isFreeTierUsed: boolean;
+  hasEverPaid: boolean;
 };
 
 export default function PdfHighlighter() {
@@ -38,7 +39,7 @@ export default function PdfHighlighter() {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const { toast } = useToast();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, isFreeTierUsed: false });
+  const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, isFreeTierUsed: false, hasEverPaid: false });
   const [redirectUrlBase, setRedirectUrlBase] = useState('');
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function PdfHighlighter() {
       const expiry = localStorage.getItem('proAccessExpiry');
       const credits = parseInt(localStorage.getItem('pdfCredits') || '0', 10);
       const analysisCount = parseInt(localStorage.getItem('pdfAnalysisCount') || '0', 10);
+      const hasEverPaid = localStorage.getItem('hasEverPaid') === 'true';
 
       let isPro = false;
       if (expiry) {
@@ -64,10 +66,11 @@ export default function PdfHighlighter() {
         isPro: isPro,
         credits: credits,
         isFreeTierUsed: analysisCount >= 1,
+        hasEverPaid: hasEverPaid,
       });
     } catch (error) {
       console.warn("Could not access localStorage:", error);
-      setUserAccess({ isPro: false, credits: 0, isFreeTierUsed: false });
+      setUserAccess({ isPro: false, credits: 0, isFreeTierUsed: false, hasEverPaid: false });
     }
   }, []);
 
@@ -122,8 +125,9 @@ export default function PdfHighlighter() {
     }
     if (credits > 0) {
       try {
-        localStorage.setItem('pdfCredits', (credits - 1).toString());
-        setUserAccess(prev => ({ ...prev, credits: prev.credits - 1 }));
+        const newCredits = credits - 1;
+        localStorage.setItem('pdfCredits', newCredits.toString());
+        setUserAccess(prev => ({ ...prev, credits: newCredits }));
       } catch (error) { console.warn("Could not write to localStorage:", error); }
       await runAnalysis();
       return;
@@ -140,14 +144,10 @@ export default function PdfHighlighter() {
   };
 
   const handleDownload = async () => {
-    const isFreeTierUser = !userAccess.isPro && userAccess.credits === 0;
+    const { isPro, hasEverPaid } = userAccess;
     
-    let hasUsedFreeAnalysis = false;
-    try {
-        hasUsedFreeAnalysis = localStorage.getItem('pdfAnalysisCount') === '1';
-    } catch (e) { console.warn("Could not access localStorage:", e) }
-
-    if (isFreeTierUser && hasUsedFreeAnalysis) {
+    // Download is a paid feature. Block if user is not Pro and has never paid.
+    if (!isPro && !hasEverPaid) {
         toast({ variant: "destructive", title: "Upgrade to Download", description: "Downloading highlighted PDFs is a premium feature." });
         setShowUpgradeDialog(true);
         return;
