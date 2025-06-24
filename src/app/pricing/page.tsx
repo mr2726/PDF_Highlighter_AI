@@ -15,8 +15,8 @@ export default function PricingPage() {
     setRedirectUrlBase(window.location.origin);
   }, []);
 
-  const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/?purchase=success&plan=pro-monthly` : '#';
-  const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/?purchase=success&plan=pay-per-pdf` : '#';
+  const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/324f3c3c-26b9-469e-b60e-fd9471c75639?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/?purchase=success&plan=pro-monthly` : '#';
+  const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/5a6bf639-dcb3-437b-aa9e-fef2008c81ac?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/?purchase=success&plan=pay-per-pdf` : '#';
 
 
   return (
