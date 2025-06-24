@@ -27,7 +27,6 @@ const PDF_SCALE = 1.5;
 type UserAccess = {
   isPro: boolean;
   credits: number;
-  isFreeTierUsed: boolean;
   hasEverPaid: boolean;
 };
 
@@ -40,7 +39,7 @@ export default function PdfHighlighter() {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const { toast } = useToast();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, isFreeTierUsed: false, hasEverPaid: false });
+  const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, hasEverPaid: false });
   const [redirectUrlBase, setRedirectUrlBase] = useState('');
   const searchParams = useSearchParams();
 
@@ -50,14 +49,10 @@ export default function PdfHighlighter() {
 
   useEffect(() => {
     // This effect runs on mount and whenever the URL query params change.
-    // We use this to detect when a user is redirected from the purchase
-    // success page, forcing a re-check of their access rights.
+    // It re-evaluates the user's access rights from localStorage.
     try {
+      // Check for Pro status first
       const expiry = localStorage.getItem('proAccessExpiry');
-      const credits = parseInt(localStorage.getItem('pdfCredits') || '0', 10);
-      const analysisCount = parseInt(localStorage.getItem('pdfAnalysisCount') || '0', 10);
-      const hasEverPaid = localStorage.getItem('hasEverPaid') === 'true';
-
       let isPro = false;
       if (expiry) {
         if (new Date(expiry) > new Date()) {
@@ -67,17 +62,30 @@ export default function PdfHighlighter() {
         }
       }
 
+      // Check for payment history
+      const hasEverPaid = localStorage.getItem('hasEverPaid') === 'true';
+
+      // Initialize credits from localStorage
+      let credits = parseInt(localStorage.getItem('pdfCredits') || '0', 10);
+
+      // Grant a one-time free credit to genuinely new users
+      if (!hasEverPaid && localStorage.getItem('pdfCredits') === null) {
+        credits = 1;
+        localStorage.setItem('pdfCredits', '1');
+      }
+
       setUserAccess({
         isPro: isPro,
-        credits: credits,
-        isFreeTierUsed: analysisCount >= 1,
+        credits: isPro ? Infinity : credits, // Pro users have unlimited analyses
         hasEverPaid: hasEverPaid,
       });
+
     } catch (error) {
       console.warn("Could not access localStorage:", error);
-      setUserAccess({ isPro: false, credits: 0, isFreeTierUsed: false, hasEverPaid: false });
+      setUserAccess({ isPro: false, credits: 0, hasEverPaid: false });
     }
   }, [searchParams]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -122,36 +130,30 @@ export default function PdfHighlighter() {
   const handleAnalyze = async () => {
     if (!pdfFile) return;
 
-    const { isPro, credits, isFreeTierUsed } = userAccess;
+    const { isPro, credits } = userAccess;
 
-    if (isPro) {
+    if (isPro || credits > 0) {
+      // For non-pro users, decrement a credit
+      if (!isPro) {
+        try {
+          const newCredits = credits - 1;
+          localStorage.setItem('pdfCredits', newCredits.toString());
+          setUserAccess(prev => ({ ...prev, credits: newCredits }));
+        } catch (error) { 
+          console.warn("Could not write to localStorage:", error);
+        }
+      }
       await runAnalysis();
-      return;
+    } else {
+      // No access, show upgrade dialog
+      setShowUpgradeDialog(true);
     }
-    if (credits > 0) {
-      try {
-        const newCredits = credits - 1;
-        localStorage.setItem('pdfCredits', newCredits.toString());
-        setUserAccess(prev => ({ ...prev, credits: newCredits }));
-      } catch (error) { console.warn("Could not write to localStorage:", error); }
-      await runAnalysis();
-      return;
-    }
-    if (!isFreeTierUsed) {
-      try {
-        localStorage.setItem('pdfAnalysisCount', '1');
-        setUserAccess(prev => ({ ...prev, isFreeTierUsed: true }));
-      } catch (error) { console.warn("Could not write to localStorage:", error); }
-      await runAnalysis();
-      return;
-    }
-    setShowUpgradeDialog(true);
   };
 
   const handleDownload = async () => {
     const { isPro, hasEverPaid } = userAccess;
     
-    // Download is a paid feature. Block if user is not Pro and has never paid.
+    // Download is a paid feature. It requires a Pro plan or having ever purchased credits.
     if (!isPro && !hasEverPaid) {
         toast({ variant: "destructive", title: "Upgrade to Download", description: "Downloading highlighted PDFs is a premium feature." });
         setShowUpgradeDialog(true);
@@ -206,7 +208,7 @@ export default function PdfHighlighter() {
           <AlertDialogHeader>
             <AlertDialogTitle>Upgrade Required</AlertDialogTitle>
             <AlertDialogDescription>
-              You've used your free analysis. You have {userAccess.credits} credit(s) remaining. Please purchase more credits or subscribe to continue.
+              You have {userAccess.credits} credit(s) remaining. Please purchase more credits or subscribe for unlimited access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -259,7 +261,7 @@ export default function PdfHighlighter() {
                             <ul className="grid gap-2 text-sm">
                             <li className="flex items-center gap-2">
                                 <Check className="h-4 w-4 text-primary" />
-                                Analyze 1 PDF document
+                                Analyze 1 PDF document for free
                             </li>
                             <li className="flex items-center gap-2">
                                 <Check className="h-4 w-4 text-primary" />

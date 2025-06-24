@@ -18,11 +18,11 @@ export default function PurchaseSuccessClient() {
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 30);
           localStorage.setItem("proAccessExpiry", expiryDate.toISOString());
-          localStorage.removeItem("pdfAnalysisCount"); // Pro plan makes free tier irrelevant
+          // Pro users don't need credit counts
+          localStorage.removeItem("pdfCredits");
         } else if (plan === "pay-per-pdf") {
           const currentCredits = parseInt(localStorage.getItem("pdfCredits") || "0");
           localStorage.setItem("pdfCredits", (currentCredits + 1).toString());
-          // We do not remove pdfAnalysisCount, the free credit is separate
         }
       } catch (error) {
         console.error("Could not access localStorage:", error);
