@@ -31,21 +31,34 @@ export async function POST(req: NextRequest) {
 
     const payload = JSON.parse(rawBody);
     const eventName = payload.meta.event_name;
-
+    
     if (eventName === 'order_created') {
-      // This is where you would handle the successful order.
-      // For example, you could update a user's account in your database to grant them access to paid features.
+      const attributes = payload.data.attributes;
+      const userEmail = attributes.user_email;
+      const variantId = attributes.first_order_item.variant_id.toString();
+      const orderId = payload.data.id;
+
+      console.log(`Received 'order_created' webhook for order ${orderId} from ${userEmail}.`);
+
+      // This is where you would interact with your database (e.g., Firestore)
+      // to grant access to the user based on the purchased product.
       
-      const orderData = payload.data;
-      console.log(`Order ${orderData.id} created for ${orderData.attributes.user_email}.`);
-      
-      // Example: find user by email and grant access based on the variant ID
-      // const userEmail = orderData.attributes.user_email;
-      // const variantId = orderData.attributes.first_order_item.variant_id;
-      // await grantPremiumAccess(userEmail, variantId);
+      switch (variantId) {
+        case '869701': // Pro Monthly
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 30);
+          console.log(`ACTION: Grant 'Pro Monthly' access to ${userEmail} until ${expiryDate.toISOString()}.`);
+          // Example DB Logic: await grantProAccess(userEmail, expiryDate);
+          break;
+        case '869712': // Pay per PDF
+          console.log(`ACTION: Grant 1 additional PDF credit to ${userEmail}.`);
+          // Example DB Logic: await addPdfCredit(userEmail, 1);
+          break;
+        default:
+          console.warn(`Order ${orderId} has an unhandled variant_id: ${variantId}`);
+      }
     }
     
-    // Acknowledge receipt of the webhook
     return NextResponse.json({ message: 'Webhook received successfully' }, { status: 200 });
 
   } catch (error) {

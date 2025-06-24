@@ -254,7 +254,7 @@ export default function PdfHighlighter() {
                         </CardContent>
                         <CardFooter>
                             <Button asChild className="w-full">
-                            <a href="https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0" target="_blank" rel="noopener noreferrer">
+                            <a href="https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0">
                                 Subscribe Now
                             </a>
                             </Button>
@@ -293,7 +293,7 @@ export default function PdfHighlighter() {
                         </CardContent>
                         <CardFooter>
                             <Button asChild className="w-full" variant="secondary">
-                            <a href="https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0" target="_blank" rel="noopener noreferrer">
+                            <a href="https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0">
                                 Buy Now
                             </a>
                             </Button>
