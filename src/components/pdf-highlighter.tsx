@@ -254,7 +254,7 @@ export default function PdfHighlighter() {
                         </CardContent>
                         <CardFooter>
                             <Button asChild className="w-full">
-                            <a href="https://your-store.lemonsqueezy.com/buy/pro-monthly-variant-id" target="_blank" rel="noopener noreferrer">
+                            <a href="https://your-store.lemonsqueezy.com/buy/869701" target="_blank" rel="noopener noreferrer">
                                 Subscribe Now
                             </a>
                             </Button>
@@ -293,7 +293,7 @@ export default function PdfHighlighter() {
                         </CardContent>
                         <CardFooter>
                             <Button asChild className="w-full" variant="secondary">
-                            <a href="https://your-store.lemonsqueezy.com/buy/per-pdf-variant-id" target="_blank" rel="noopener noreferrer">
+                            <a href="https://your-store.lemonsqueezy.com/buy/869712" target="_blank" rel="noopener noreferrer">
                                 Buy Now
                             </a>
                             </Button>
