@@ -30,7 +30,8 @@ export default function PurchaseSuccessClient() {
     }
 
     const timer = setTimeout(() => {
-      router.push("/");
+      // Redirect back to the main page with a parameter to signal a refresh of access rights.
+      router.push("/?purchase=success");
     }, 500);
 
     return () => clearTimeout(timer);

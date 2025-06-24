@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useToast } from "@/hooks/use-toast";
 import { analyzePdf } from '@/app/actions';
@@ -41,12 +42,16 @@ export default function PdfHighlighter() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, isFreeTierUsed: false, hasEverPaid: false });
   const [redirectUrlBase, setRedirectUrlBase] = useState('');
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setRedirectUrlBase(window.location.origin);
   }, []);
 
   useEffect(() => {
+    // This effect runs on mount and whenever the URL query params change.
+    // We use this to detect when a user is redirected from the purchase
+    // success page, forcing a re-check of their access rights.
     try {
       const expiry = localStorage.getItem('proAccessExpiry');
       const credits = parseInt(localStorage.getItem('pdfCredits') || '0', 10);
@@ -72,7 +77,7 @@ export default function PdfHighlighter() {
       console.warn("Could not access localStorage:", error);
       setUserAccess({ isPro: false, credits: 0, isFreeTierUsed: false, hasEverPaid: false });
     }
-  }, []);
+  }, [searchParams]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -191,6 +196,8 @@ export default function PdfHighlighter() {
 
   const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pro-monthly` : '#';
   const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pay-per-pdf` : '#';
+  
+  const canDownload = userAccess.isPro || userAccess.hasEverPaid;
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -372,7 +379,7 @@ export default function PdfHighlighter() {
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
                       {aiResult ? 'Re-Analyze' : 'Analyze'}
                     </Button>
-                    <Button onClick={handleDownload} disabled={!aiResult || isLoading} variant="outline">
+                    <Button onClick={handleDownload} disabled={!aiResult || isLoading || !canDownload} variant="outline">
                       <Download className="mr-2 h-4 w-4" />
                       Download
                     </Button>
