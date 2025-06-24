@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useToast } from "@/hooks/use-toast";
 import { analyzePdf } from '@/app/actions';
@@ -41,6 +41,8 @@ export default function PdfHighlighter() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [userAccess, setUserAccess] = useState<UserAccess>({ isPro: false, credits: 0, hasEverPaid: false });
   const [redirectUrlBase, setRedirectUrlBase] = useState('');
+  
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -48,43 +50,66 @@ export default function PdfHighlighter() {
   }, []);
 
   useEffect(() => {
-    // This effect runs on mount and whenever the URL query params change.
-    // It re-evaluates the user's access rights from localStorage.
+    const hasPurchaseSucceeded = searchParams.get('purchase') === 'success';
+    const plan = searchParams.get('plan');
+    let purchaseHandled = false;
+
+    // --- Logic to handle successful purchase ---
+    if (hasPurchaseSucceeded && plan) {
+      try {
+        localStorage.setItem('hasEverPaid', 'true'); // Mark that the user has paid
+
+        if (plan === "pro-monthly") {
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 30);
+          localStorage.setItem("proAccessExpiry", expiryDate.toISOString());
+          localStorage.removeItem("pdfCredits"); // Pro users don't use credits
+        } else if (plan === "pay-per-pdf") {
+          const currentCredits = parseInt(localStorage.getItem("pdfCredits") || "0", 10);
+          localStorage.setItem("pdfCredits", (currentCredits + 1).toString());
+        }
+        purchaseHandled = true;
+      } catch (error) {
+        console.error("Could not access localStorage during purchase update:", error);
+      }
+    }
+    
+    // --- Logic to check current access rights ---
     try {
-      // Check for Pro status first
       const expiry = localStorage.getItem('proAccessExpiry');
       let isPro = false;
-      if (expiry) {
-        if (new Date(expiry) > new Date()) {
-          isPro = true;
-        } else {
-          localStorage.removeItem('proAccessExpiry');
-        }
+      if (expiry && new Date(expiry) > new Date()) {
+        isPro = true;
+      } else if (expiry) {
+        localStorage.removeItem('proAccessExpiry');
       }
 
-      // Check for payment history
       const hasEverPaid = localStorage.getItem('hasEverPaid') === 'true';
-
-      // Initialize credits from localStorage
       let credits = parseInt(localStorage.getItem('pdfCredits') || '0', 10);
 
-      // Grant a one-time free credit to genuinely new users
+      // Grant a one-time free credit ONLY to genuinely new users
       if (!hasEverPaid && localStorage.getItem('pdfCredits') === null) {
         credits = 1;
         localStorage.setItem('pdfCredits', '1');
       }
 
       setUserAccess({
-        isPro: isPro,
-        credits: isPro ? Infinity : credits, // Pro users have unlimited analyses
-        hasEverPaid: hasEverPaid,
+        isPro,
+        credits: isPro ? Infinity : credits,
+        hasEverPaid,
       });
 
     } catch (error) {
-      console.warn("Could not access localStorage:", error);
+      console.warn("Could not access localStorage for access check:", error);
       setUserAccess({ isPro: false, credits: 0, hasEverPaid: false });
     }
-  }, [searchParams]);
+
+    // --- Clean the URL if a purchase was just processed ---
+    if (purchaseHandled) {
+      // Use replace to avoid adding to history, so back button works as expected
+      router.replace('/'); 
+    }
+  }, [searchParams, router]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,8 +221,8 @@ export default function PdfHighlighter() {
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, numPages));
 
-  const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pro-monthly` : '#';
-  const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/purchase-success?plan=pay-per-pdf` : '#';
+  const proMonthlyUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/c63b62d1-b3ec-43f8-a6a6-e5eb511cd698?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/?purchase=success&plan=pro-monthly` : '#';
+  const payPerPdfUrl = redirectUrlBase ? `https://casperdevstore.lemonsqueezy.com/buy/9c9e2821-6f59-4b72-9ef5-526062134daa?media=0&logo=0&desc=0&discount=0&redirect_url=${redirectUrlBase}/?purchase=success&plan=pay-per-pdf` : '#';
   
   const canDownload = userAccess.isPro || userAccess.hasEverPaid;
 
