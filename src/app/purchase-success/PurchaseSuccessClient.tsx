@@ -12,15 +12,17 @@ export default function PurchaseSuccessClient() {
   useEffect(() => {
     if (plan) {
       try {
+        localStorage.setItem('hasEverPaid', 'true'); // Mark that the user has paid
+
         if (plan === "pro-monthly") {
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 30);
           localStorage.setItem("proAccessExpiry", expiryDate.toISOString());
-          localStorage.removeItem("pdfAnalysisCount");
+          localStorage.removeItem("pdfAnalysisCount"); // Pro plan makes free tier irrelevant
         } else if (plan === "pay-per-pdf") {
           const currentCredits = parseInt(localStorage.getItem("pdfCredits") || "0");
           localStorage.setItem("pdfCredits", (currentCredits + 1).toString());
-          localStorage.removeItem("pdfAnalysisCount");
+          // We do not remove pdfAnalysisCount, the free credit is separate
         }
       } catch (error) {
         console.error("Could not access localStorage:", error);
